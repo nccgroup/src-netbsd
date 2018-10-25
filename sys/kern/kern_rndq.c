@@ -59,7 +59,7 @@ __KERNEL_RCSID(0, "$NetBSD: kern_rndq.c,v 1.89 2016/05/21 15:27:15 riastradh Exp
 #include <compat/sys/rnd.h>
 #endif
 
-#if defined(__HAVE_CPU_RNG) && !defined(_RUMPKERNEL)
+#if defined(__HAVE_CPU_RNG)
 #include <machine/cpu_rng.h>
 #endif
 
@@ -422,7 +422,7 @@ rnd_dv_estimate(krndsource_t *rs, uint32_t v)
 	return ret;
 }
 
-#if defined(__HAVE_CPU_RNG) && !defined(_RUMPKERNEL)
+#if defined(__HAVE_CPU_RNG)
 static struct {
 	kmutex_t	lock;	/* unfortunately, must protect krndsource */
 	krndsource_t	source;
@@ -602,7 +602,7 @@ rnd_init(void)
 	/*
 	 * Attach CPU RNG if available.
 	 */
-#if defined(__HAVE_CPU_RNG) && !defined(_RUMPKERNEL)
+#if defined(__HAVE_CPU_RNG)
 	if (cpu_rng_init()) {
 		/* IPL_VM because taken while rnd_global.lock is held.  */
 		mutex_init(&rnd_cpu.lock, MUTEX_DEFAULT, IPL_VM);
