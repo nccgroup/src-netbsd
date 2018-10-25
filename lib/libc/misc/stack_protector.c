@@ -48,7 +48,8 @@ void xprintf(const char *fmt, ...);
 #include <stdlib.h>
 #endif
 
-long __stack_chk_guard[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+uintptr_t __stack_chk_guard = 0;
+uintptr_t ___stack_chk_guard = 0;
 static void __fail(const char *) __attribute__((__noreturn__));
 __dead void __stack_chk_fail_local(void);
 void __guard_setup(void);
@@ -57,20 +58,21 @@ void __section(".text.startup")
 __guard_setup(void)
 {
 	static const int mib[2] = { CTL_KERN, KERN_ARND };
-	size_t len;
+	static size_t len = sizeof(___stack_chk_guard);
 
-	if (__stack_chk_guard[0] != 0)
+	if (__stack_chk_guard != 0)
 		return;
-
-	len = sizeof(__stack_chk_guard);
-	if (__sysctl(mib, (u_int)__arraycount(mib), __stack_chk_guard, &len,
-	    NULL, 0) == -1 || len != sizeof(__stack_chk_guard)) {
-		/* If sysctl was unsuccessful, use the "terminator canary". */
-		((unsigned char *)(void *)__stack_chk_guard)[0] = 0;
-		((unsigned char *)(void *)__stack_chk_guard)[1] = 0;
-		((unsigned char *)(void *)__stack_chk_guard)[2] = '\n';
-		((unsigned char *)(void *)__stack_chk_guard)[3] = 255;
+  
+	if (__sysctl(mib, (u_int)__arraycount(mib), &___stack_chk_guard, &len,
+	    NULL, 0) == -1 || len != sizeof(___stack_chk_guard)) {
+		// If sysctl was unsuccessful, use the "terminator canary".
+		((unsigned char *)(void *)&___stack_chk_guard)[0] = 0;
+		((unsigned char *)(void *)&___stack_chk_guard)[1] = 0;
+		((unsigned char *)(void *)&___stack_chk_guard)[2] = '\n';
+		((unsigned char *)(void *)&___stack_chk_guard)[3] = 255;
 	}
+  
+  __stack_chk_guard = ___stack_chk_guard;
 }
 
 /*ARGSUSED*/

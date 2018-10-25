@@ -76,6 +76,8 @@ void _libc_init(void);
  */
 struct ps_strings *__ps_strings;
 
+extern uintptr_t __stack_chk_guard;
+
 /*
  * _libc_init is called twice.  The first time explicitly by crt0.o
  * (for newer versions) and the second time as indirectly via _init().
@@ -112,4 +114,7 @@ _libc_init(void)
 
 	/* Initialize environment memory RB tree. */
 	__libc_env_init();
+
+  // Avoid stack check fails in higher-level functions
+  __stack_chk_guard = 0;
 }
