@@ -20,4 +20,4 @@ COPTS.hijackdlsym.c+=	-O0
 
 .include <bsd.lib.mk>
 
-CPPFLAGS+=	-U_FORTIFY_SOURCE
+CPPFLAGS+=	-D_FORTIFY_SOURCE=2

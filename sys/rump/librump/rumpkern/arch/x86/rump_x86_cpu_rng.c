@@ -43,24 +43,6 @@ __KERNEL_RCSID(0, "$NetBSD: rump_x86_cpu_rng.c,v 1.1 2018/10/26 11:27:00 smichae
 #include <machine/cpuvar.h>
 #include <machine/cpu_rng.h>
 
-static inline void x86_enable_intr() {
-  asm("sti");
-}
-
-static inline void x86_disable_intr() {
-  asm("cli");
-}
-
-static inline u_long rcr0() {
-  u_long cr0;
-  asm("\t movq %%cr0, %0" : "=r"(cr0));
-  return cr0;
-}
-
-static inline void lcr0(u_long value) {
-  asm("\t movq %0, %%cr0" : : "r"(value));
-}
-
 static inline void native_cpuid(unsigned *eax, unsigned *ebx,
                                 unsigned *ecx, unsigned *edx)
 {
@@ -103,8 +85,7 @@ static void get_cpu_features(bool *has_rdseed, bool *has_rdrand) {
 static enum {
 	CPU_RNG_NONE = 0,
 	CPU_RNG_RDRAND,
-	CPU_RNG_RDSEED,
-	CPU_RNG_VIA
+	CPU_RNG_RDSEED
 } cpu_rng_mode __read_mostly = CPU_RNG_NONE;
 
 bool
@@ -186,49 +167,6 @@ exhausted:
 	return cpu_rng_rdrand(out);
 }
 
-static size_t
-cpu_rng_via(cpu_rng_t *out)
-{
-	uint32_t creg0, rndsts;
-
-	/*
-	 * Sadly, we have to monkey with the coprocessor enable and fault
-	 * registers, which are really for the FPU, in order to read
-	 * from the RNG.
-	 *
-	 * Don't remove CR0_TS from the call below -- comments in the Linux
-	 * driver indicate that the xstorerng instruction can generate
-	 * spurious DNA faults though no FPU or SIMD state is changed
-	 * even if such a fault is generated.
-	 *
-	 * XXX can this really happen if we don't use "rep xstorrng"?
-	 *
-	 */
-	kpreempt_disable();
-	x86_disable_intr();
-	creg0 = rcr0();
-	lcr0(creg0 & ~(CR0_EM|CR0_TS)); /* Permit access to SIMD/FPU path */
-	/*
-	 * The VIA RNG has an output queue of 8-byte values.  Read one.
-	 * This is atomic, so if the FPU were already enabled, we could skip
-	 * all the preemption and interrupt frobbing.  If we had bread,
-	 * we could have a ham sandwich, if we had any ham.
-	 */
-	__asm __volatile("xstorerng"
-	    : "=a" (rndsts), "+D" (out) : "d" (0) : "memory");
-	/* Put CR0 back how it was */
-	lcr0(creg0);
-	x86_enable_intr();
-	kpreempt_enable();
-
-	/*
-	 * The Cryptography Research paper on the VIA RNG estimates
-	 * 0.75 bits of entropy per output bit and advises users to
-	 * be "even more conservative".
-	 */
-	return rndsts & 0xf ? 0 : sizeof(cpu_rng_t) * NBBY / 2;
-}
-
 size_t
 cpu_rng(cpu_rng_t *out)
 {
@@ -239,8 +177,6 @@ cpu_rng(cpu_rng_t *out)
 		return cpu_rng_rdseed(out);
 	case CPU_RNG_RDRAND:
 		return cpu_rng_rdrand(out);
-	case CPU_RNG_VIA:
-		return cpu_rng_via(out);
 	default:
 		panic("cpu_rng: unknown mode %d", (int)cpu_rng_mode);
 	}
