@@ -85,6 +85,7 @@ extern uintptr_t __stack_chk_guard;
 void __section(".text.startup")
 _libc_init(void)
 {
+  uintptr_t stack_chk_guard_orig = __stack_chk_guard;
 
 	if (libc_initialised)
 		return;
@@ -115,6 +116,6 @@ _libc_init(void)
 	/* Initialize environment memory RB tree. */
 	__libc_env_init();
 
-  // Avoid stack check fails in higher-level functions
-  __stack_chk_guard = 0;
+  // Avoid stack check failures in any function that called this
+  __stack_chk_guard = stack_chk_guard_orig;
 }

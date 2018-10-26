@@ -43,21 +43,21 @@ __KERNEL_RCSID(0, "$NetBSD: rump_x86_cpu_rng.c,v 1.1 2018/10/26 11:27:00 smichae
 #include <machine/cpuvar.h>
 #include <machine/cpu_rng.h>
 
-void x86_enable_intr() {
+static inline void x86_enable_intr() {
   asm("sti");
 }
 
-void x86_disable_intr() {
+static inline void x86_disable_intr() {
   asm("cli");
 }
 
-u_long rcr0() {
+static inline u_long rcr0() {
   u_long cr0;
   asm("\t movq %%cr0, %0" : "=r"(cr0));
   return cr0;
 }
 
-void lcr0(u_long value) {
+static inline void lcr0(u_long value) {
   asm("\t movq %0, %%cr0" : : "r"(value));
 }
 
@@ -74,30 +74,30 @@ static inline void native_cpuid(unsigned *eax, unsigned *ebx,
         "c" (*ecx));
 }
 
-static inline void get_cpu_features(bool *has_rdseed, bool *has_rdrand) {
+static void get_cpu_features(bool *has_rdseed, bool *has_rdrand) {
+  *has_rdseed = false;
+  *has_rdrand = false;
+
   unsigned eax, ebx, ecx, edx;
 
   eax = 0; ecx = 0;
   native_cpuid(&eax, &ebx, &ecx, &edx);
 
   const unsigned max_eax = eax;
-  
 
-  if (max_eax >= 1) {
-    eax = 1; ecx = 0;
-    native_cpuid(&eax, &ebx, &ecx, &edx);
-    *has_rdrand = (ecx & CPUID2_RDRAND) != 0;
-  } else {
-    *has_rdrand = false;
-  }
+  if (max_eax < 1)
+    return;
 
-  if (max_eax >= 7) {
-    eax = 7; ecx = 0;
-    native_cpuid(&eax, &ebx, &ecx, &edx);
-    *has_rdseed = (ebx & CPUID_SEF_RDSEED) != 0;
-  } else {
-    *has_rdseed = false;
-  }
+  eax = 1; ecx = 0;
+  native_cpuid(&eax, &ebx, &ecx, &edx);
+  *has_rdrand = (ecx & CPUID2_RDRAND) != 0;
+
+  if (max_eax < 7)
+    return;
+
+  eax = 7; ecx = 0;
+  native_cpuid(&eax, &ebx, &ecx, &edx);
+  *has_rdseed = (ebx & CPUID_SEF_RDSEED) != 0;
 }
 
 static enum {
