@@ -49,30 +49,39 @@ void xprintf(const char *fmt, ...);
 #endif
 
 uintptr_t __stack_chk_guard = 0;
-uintptr_t ___stack_chk_guard = 0;
+
 static void __fail(const char *) __attribute__((__noreturn__));
 __dead void __stack_chk_fail_local(void);
 void __guard_setup(void);
 
+// NOTE: This function can't have any stack variables, otherwise it may be
+// given a guard check by the compiler. In that case, the guard value will be
+// different when it starts and ends, causing a failure.
 void __section(".text.startup")
 __guard_setup(void)
 {
+  static uintptr_t stack_chk_guard_tmp = 0;
 	static const int mib[2] = { CTL_KERN, KERN_ARND };
-	static size_t len = sizeof(___stack_chk_guard);
+	static size_t len = sizeof(stack_chk_guard_tmp);
 
 	if (__stack_chk_guard != 0)
 		return;
   
-	if (__sysctl(mib, (u_int)__arraycount(mib), &___stack_chk_guard, &len,
-	    NULL, 0) == -1 || len != sizeof(___stack_chk_guard)) {
+	if (__sysctl(mib, (u_int)__arraycount(mib), &stack_chk_guard_tmp, &len,
+	    NULL, 0) == -1 || len != sizeof(stack_chk_guard_tmp)) {
 		// If sysctl was unsuccessful, use the "terminator canary".
-		((unsigned char *)(void *)&___stack_chk_guard)[0] = 0;
-		((unsigned char *)(void *)&___stack_chk_guard)[1] = 0;
-		((unsigned char *)(void *)&___stack_chk_guard)[2] = '\n';
-		((unsigned char *)(void *)&___stack_chk_guard)[3] = 255;
+    unsigned char* p = (unsigned char*)&stack_chk_guard_tmp;
+    p[0] = 0;
+    p[1] = 0;
+    p[2] = '\n';
+    p[3] = 255;
 	}
   
-  __stack_chk_guard = ___stack_chk_guard;
+  // Put a null byte in the canary at the second byte.
+  // See https://www.openwall.com/lists/kernel-hardening/2017/09/19/8
+  ((unsigned char *)(void *)&stack_chk_guard_tmp)[1] = 0;
+
+  __stack_chk_guard = stack_chk_guard_tmp;
 }
 
 /*ARGSUSED*/
