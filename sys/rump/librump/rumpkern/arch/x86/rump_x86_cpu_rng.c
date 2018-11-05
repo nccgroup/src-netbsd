@@ -41,46 +41,8 @@ __KERNEL_RCSID(0, "$NetBSD: rump_x86_cpu_rng.c,v 1.1 2018/10/26 11:27:00 smichae
 
 #include <machine/cpufunc.h>
 #include <machine/cpuvar.h>
+#include <machine/cpu_features.h>
 #include <machine/cpu_rng.h>
-
-static inline void native_cpuid(unsigned *eax, unsigned *ebx,
-                                unsigned *ecx, unsigned *edx)
-{
-  /* ecx is often an input as well as an output. */
-  asm volatile("cpuid"
-      : "=a" (*eax),
-        "=b" (*ebx),
-        "=c" (*ecx),
-        "=d" (*edx)
-      : "a" (*eax),
-        "c" (*ecx));
-}
-
-static void get_cpu_features(bool *has_rdseed, bool *has_rdrand) {
-  *has_rdseed = false;
-  *has_rdrand = false;
-
-  unsigned eax, ebx, ecx, edx;
-
-  eax = 0; ecx = 0;
-  native_cpuid(&eax, &ebx, &ecx, &edx);
-
-  const unsigned max_eax = eax;
-
-  if (max_eax < 1)
-    return;
-
-  eax = 1; ecx = 0;
-  native_cpuid(&eax, &ebx, &ecx, &edx);
-  *has_rdrand = (ecx & CPUID2_RDRAND) != 0;
-
-  if (max_eax < 7)
-    return;
-
-  eax = 7; ecx = 0;
-  native_cpuid(&eax, &ebx, &ecx, &edx);
-  *has_rdseed = (ebx & CPUID_SEF_RDSEED) != 0;
-}
 
 static enum {
 	CPU_RNG_NONE = 0,
@@ -91,14 +53,13 @@ static enum {
 bool
 cpu_rng_init(void)
 {
-  bool has_rdseed, has_rdrand;
-  get_cpu_features(&has_rdseed, &has_rdrand);
+  unsigned long features = cpu_get_features();
 
-	if (has_rdseed) {
+	if (features & CPU_FEATURE_RDSEED) {
 		cpu_rng_mode = CPU_RNG_RDSEED;
 		aprint_normal("cpu_rng: RDSEED\n");
 		return true;
-	} else if (has_rdrand) {
+	} else if (features & CPU_FEATURE_RDRAND) {
 		cpu_rng_mode = CPU_RNG_RDRAND;
 		aprint_normal("cpu_rng: RDRAND\n");
 		return true;

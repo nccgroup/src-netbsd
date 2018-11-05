@@ -43,7 +43,6 @@ __RCSID("$NetBSD: initfini.c,v 1.11 2013/08/19 22:14:37 matt Exp $");
 
 void	_libc_init(void) __attribute__((__constructor__, __used__));
 
-void	__guard_setup(void);
 void	__libc_thr_init(void);
 void	__libc_atomic_init(void);
 void	__libc_atexit_init(void);
@@ -76,7 +75,7 @@ void _libc_init(void);
  */
 struct ps_strings *__ps_strings;
 
-extern uintptr_t __stack_chk_guard;
+//extern void __guard_setup(void);
 
 /*
  * _libc_init is called twice.  The first time explicitly by crt0.o
@@ -85,8 +84,6 @@ extern uintptr_t __stack_chk_guard;
 void __section(".text.startup")
 _libc_init(void)
 {
-  uintptr_t stack_chk_guard_orig = __stack_chk_guard;
-
 	if (libc_initialised)
 		return;
 
@@ -97,7 +94,7 @@ _libc_init(void)
 		    __ps_strings->ps_nargvstr + __ps_strings->ps_nenvstr + 2;
 
 	/* For -fstack-protector */
-	__guard_setup();
+	//__guard_setup();
 
 	/* Atomic operations */
 	__libc_atomic_init();
@@ -115,7 +112,4 @@ _libc_init(void)
 
 	/* Initialize environment memory RB tree. */
 	__libc_env_init();
-
-  // Avoid stack check failures in any function that called this
-  __stack_chk_guard = stack_chk_guard_orig;
 }
