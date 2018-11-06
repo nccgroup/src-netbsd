@@ -75,8 +75,6 @@ void _libc_init(void);
  */
 struct ps_strings *__ps_strings;
 
-//extern void __guard_setup(void);
-
 /*
  * _libc_init is called twice.  The first time explicitly by crt0.o
  * (for newer versions) and the second time as indirectly via _init().
@@ -92,9 +90,6 @@ _libc_init(void)
 	if (__ps_strings != NULL)
 		__libc_dlauxinfo = __ps_strings->ps_argvstr +
 		    __ps_strings->ps_nargvstr + __ps_strings->ps_nenvstr + 2;
-
-	/* For -fstack-protector */
-	//__guard_setup();
 
 	/* Atomic operations */
 	__libc_atomic_init();

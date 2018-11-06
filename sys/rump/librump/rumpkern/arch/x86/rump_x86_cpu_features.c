@@ -43,9 +43,6 @@ __KERNEL_RCSID(0, "$NetBSD: rump_x86_cpu_features.c,v 1.1 2018/10/26 11:27:00 sm
 #include <machine/cpuvar.h>
 #include <machine/cpu_features.h>
 
-#define CPUID_NX (1ULL << 20)
-#define CPUID_MODE_EXTENDED_FEATURES 0x80000001
-
 static void native_cpuid(unsigned *eax, unsigned *ebx,
                          unsigned *ecx, unsigned *edx)
 {
@@ -81,13 +78,6 @@ unsigned long cpu_get_features(void) {
   eax = 7; ecx = 0;
   native_cpuid(&eax, &ebx, &ecx, &edx);
   features |= (ebx & CPUID_SEF_RDSEED) ? CPU_FEATURE_RDSEED : 0;
-
-  if (max_eax < CPUID_MODE_EXTENDED_FEATURES)
-    return features;
-
-  eax = CPUID_MODE_EXTENDED_FEATURES; ecx = 0;
-  native_cpuid(&eax, &ebx, &ecx, &edx);
-  features |= (edx & CPUID_NX) ? CPU_FEATURE_NX : 0;
 
   return features;
 }

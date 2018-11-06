@@ -48,29 +48,74 @@ void xprintf(const char *fmt, ...);
 #include <stdlib.h>
 #endif
 
-uintptr_t __stack_chk_guard = 0;
+#include <immintrin.h>
+
+#define     PAGE_SIZE       0x1000
+#define     CPUID2_RDRAND   0x40000000
+
+union {
+  struct {
+    uintptr_t stack_chk_guard, heap_chunk_chk_guard, heap_page_chk_guard;
+  } v;
+  char __pad[PAGE_SIZE];
+} __stack_chk_guard __attribute__((__aligned__(PAGE_SIZE)));
+
+extern uintptr_t heap_chunk_chk_guard;
+extern uintptr_t heap_page_chk_guard;
 
 static void __fail(const char *) __attribute__((__noreturn__));
 __dead void __stack_chk_fail_local(void);
 void __guard_setup(void);
 
-// NOTE: This function can't have any stack variables, otherwise it may be
-// given a guard check by the compiler. In that case, the guard value will be
-// different when it starts and ends, causing a failure.
-void __section(".text.startup")
-__guard_setup(void)
+static void native_cpuid(unsigned *eax, unsigned *ebx,
+                         unsigned *ecx, unsigned *edx)
 {
-  static uintptr_t stack_chk_guard_tmp = 0;
-	static const int mib[2] = { CTL_KERN, KERN_ARND };
-	static size_t len = sizeof(stack_chk_guard_tmp);
+  /* ecx is often an input as well as an output. */
+  asm volatile("cpuid"
+      : "=a" (*eax),
+        "=b" (*ebx),
+        "=c" (*ecx),
+        "=d" (*edx)
+      : "a" (*eax),
+        "c" (*ecx));
+}
 
-	if (__stack_chk_guard != 0)
-		return;
-  
-	if (__sysctl(mib, (u_int)__arraycount(mib), &stack_chk_guard_tmp, &len,
-	    NULL, 0) == -1 || len != sizeof(stack_chk_guard_tmp)) {
+static int cpu_supports_rdrand(void) {
+  unsigned eax, ebx, ecx, edx;
+
+  eax = 0; ecx = 0;
+  native_cpuid(&eax, &ebx, &ecx, &edx);
+
+  const unsigned max_eax = eax;
+
+  if (max_eax < 1)
+    return 0;
+
+  eax = 1; ecx = 0;
+  native_cpuid(&eax, &ebx, &ecx, &edx);
+  return (ecx & CPUID2_RDRAND);
+}
+
+static int do_rdrand(uintptr_t* result)
+{
+  int res = 0;
+  while (res == 0)
+    {
+#ifdef __x86_64__
+      res = _rdrand64_step((unsigned long long*)result);
+#else
+      res = _rdrand32_step((unsigned long long*)result);
+#endif
+    }
+  return (res == 1);
+}
+
+uintptr_t make_guard(void) {
+  uintptr_t guard_tmp = 0;
+
+	if (!cpu_supports_rdrand() || !do_rdrand(&guard_tmp)) {
 		// If sysctl was unsuccessful, use the "terminator canary".
-    unsigned char* p = (unsigned char*)&stack_chk_guard_tmp;
+    unsigned char* p = (unsigned char*)&guard_tmp;
     p[0] = 0;
     p[1] = 0;
     p[2] = '\n';
@@ -79,9 +124,17 @@ __guard_setup(void)
   
   // Put a null byte in the canary at the second byte.
   // See https://www.openwall.com/lists/kernel-hardening/2017/09/19/8
-  ((unsigned char *)(void *)&stack_chk_guard_tmp)[1] = 0;
+  ((unsigned char *)(void *)&guard_tmp)[1] = 0;
 
-  __stack_chk_guard = stack_chk_guard_tmp;
+  return guard_tmp;
+}
+
+void __section(".text.startup")
+__guard_setup(void)
+{
+  __stack_chk_guard.v.stack_chk_guard = make_guard();
+  __stack_chk_guard.v.heap_chunk_chk_guard = make_guard();
+  __stack_chk_guard.v.heap_page_chk_guard = make_guard();
 }
 
 /*ARGSUSED*/
