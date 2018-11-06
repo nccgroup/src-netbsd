@@ -53,15 +53,14 @@ void xprintf(const char *fmt, ...);
 #define     PAGE_SIZE       0x1000
 #define     CPUID2_RDRAND   0x40000000
 
-union {
+typedef union {
   struct {
     uintptr_t stack_chk_guard, heap_chunk_chk_guard, heap_page_chk_guard;
   } v;
   char __pad[PAGE_SIZE];
-} __stack_chk_guard __attribute__((__aligned__(PAGE_SIZE)));
+} stack_chk_guard_t;
 
-extern uintptr_t heap_chunk_chk_guard;
-extern uintptr_t heap_page_chk_guard;
+stack_chk_guard_t __stack_chk_guard __attribute__((__aligned__(PAGE_SIZE)));
 
 static void __fail(const char *) __attribute__((__noreturn__));
 __dead void __stack_chk_fail_local(void);
@@ -104,7 +103,7 @@ static int do_rdrand(uintptr_t* result)
 #ifdef __x86_64__
       res = _rdrand64_step((unsigned long long*)result);
 #else
-      res = _rdrand32_step((unsigned long long*)result);
+      res = _rdrand32_step((unsigned long*)result);
 #endif
     }
   return (res == 1);
