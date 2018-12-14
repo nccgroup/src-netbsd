@@ -147,6 +147,7 @@ file	kern/sys_select.c		kern
 file	kern/sys_sig.c			kern
 file	kern/sys_sched.c		kern
 file	kern/sys_socket.c		kern
+file	kern/sys_xen.c		kern
 file	kern/syscalls.c			syscall_debug | kdtrace_hooks
 file	kern/sysv_ipc.c			sysvshm | sysvsem | sysvmsg
 file	kern/sysv_msg.c			sysvmsg
