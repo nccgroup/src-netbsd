@@ -55,7 +55,6 @@ static enum {
 bool
 cpu_rng_init(void)
 {
-
 	if (cpu_feature[5] & CPUID_SEF_RDSEED) {
 		cpu_rng_mode = CPU_RNG_RDSEED;
 		aprint_normal("cpu_rng: RDSEED\n");
@@ -179,7 +178,6 @@ cpu_rng_via(cpu_rng_t *out)
 size_t
 cpu_rng(cpu_rng_t *out)
 {
-
 	switch (cpu_rng_mode) {
 	case CPU_RNG_NONE:
 		return 0;
