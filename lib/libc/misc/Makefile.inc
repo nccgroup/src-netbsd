@@ -5,6 +5,7 @@
 
 # constructor
 SRCS+=	initfini.c
+CFLAGS+= -fno-stack-protector -mrdrnd
 
 # for -fstack-protector
 SRCS+=	stack_protector.c
