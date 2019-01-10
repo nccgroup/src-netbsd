@@ -474,8 +474,12 @@ xyzprintf (struct state *state, const char *char_format, va_list ap)
 	break;
       }
       case 'n' : {
+#ifdef _N_SPECIFIER_IS_NOOP
+	va_arg(ap, int*);
+#else
 	int *arg = va_arg(ap, int*);
 	*arg = state->s - state->str;
+#endif
 	break;
       }
       case '\0' :

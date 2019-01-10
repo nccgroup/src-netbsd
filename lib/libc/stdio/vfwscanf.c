@@ -336,22 +336,41 @@ literal:
 			nconversions++;
 			if (flags & SUPPRESS)	/* ??? */
 				continue;
+#ifndef _N_SPECIFIER_IS_NOOP
 			if (flags & SHORTSHORT)
-				*va_arg(ap, char *) = (char)nread;
+				va_arg(ap, char *);
 			else if (flags & SHORT)
-				*va_arg(ap, short *) = (short)nread;
+				va_arg(ap, short *);
 			else if (flags & LONG)
-				*va_arg(ap, long *) = nread;
+				va_arg(ap, long *);
 			else if (flags & LONGLONG)
-				*va_arg(ap, quad_t *) = nread;
+				va_arg(ap, quad_t *);
 			else if (flags & INTMAXT)
-				*va_arg(ap, intmax_t *) = nread;
+				va_arg(ap, intmax_t *);
 			else if (flags & SIZET)
-				*va_arg(ap, size_t *) = nread;
+				va_arg(ap, size_t *);
 			else if (flags & PTRDIFFT)
-				*va_arg(ap, ptrdiff_t *) = nread;
+				va_arg(ap, ptrdiff_t *);
 			else
-				*va_arg(ap, int *) = (int)nread;
+				va_arg(ap, int *);
+#else
+			if (flags & SHORTSHORT)
+				va_arg(ap, char *) = (char)nread;
+			else if (flags & SHORT)
+				va_arg(ap, short *) = (short)nread;
+			else if (flags & LONG)
+				va_arg(ap, long *) = nread;
+			else if (flags & LONGLONG)
+				va_arg(ap, quad_t *) = nread;
+			else if (flags & INTMAXT)
+				va_arg(ap, intmax_t *) = nread;
+			else if (flags & SIZET)
+				va_arg(ap, size_t *) = nread;
+			else if (flags & PTRDIFFT)
+				va_arg(ap, ptrdiff_t *) = nread;
+			else
+				va_arg(ap, int *) = (int)nread;
+#endif
 			continue;
 
 		default:

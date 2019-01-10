@@ -281,20 +281,37 @@ reswitch:	switch (ch) {
 			base = DEC;
 			goto number;
 		case 'n':
+#ifdef _N_SPECIFIER_IS_NOOP
 			if (flags & MAXINT)
-				*va_arg(ap, intmax_t *) = ret;
+				va_arg(ap, intmax_t *);
 			else if (flags & PTRINT)
-				*va_arg(ap, intptr_t *) = ret;
+				va_arg(ap, intptr_t *);
 			else if (flags & SIZEINT)
-				*va_arg(ap, ssize_t *) = ret;
+				va_arg(ap, ssize_t *);
 			else if (flags & QUADINT)
-				*va_arg(ap, quad_t *) = ret;
+				va_arg(ap, quad_t *);
 			else if (flags & LONGINT)
-				*va_arg(ap, long *) = ret;
+				va_arg(ap, long *);
 			else if (flags & SHORTINT)
-				*va_arg(ap, short *) = ret;
+				va_arg(ap, short *);
 			else
-				*va_arg(ap, int *) = ret;
+				va_arg(ap, int *);
+#else
+			if (flags & MAXINT)
+				va_arg(ap, intmax_t *) = ret;
+			else if (flags & PTRINT)
+				va_arg(ap, intptr_t *) = ret;
+			else if (flags & SIZEINT)
+				va_arg(ap, ssize_t *) = ret;
+			else if (flags & QUADINT)
+				va_arg(ap, quad_t *) = ret;
+			else if (flags & LONGINT)
+				va_arg(ap, long *) = ret;
+			else if (flags & SHORTINT)
+				va_arg(ap, short *) = ret;
+			else
+				va_arg(ap, int *) = ret;
+#endif
 			continue;	/* no output */
 		case 'O':
 			flags |= LONGINT;

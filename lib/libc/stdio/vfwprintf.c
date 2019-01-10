@@ -1288,22 +1288,41 @@ fp_common:
 			 * value overflows or is otherwise unrepresentable.
 			 * C99 says to use `signed char' for %hhn conversions.
 			 */
+#ifdef _N_SPECIFIER_IS_NOOP
 			if (flags & LLONGINT)
-				*GETARG(long long *) = ret;
+				GETARG(long long *);
 			else if (flags & SIZET)
-				*GETARG(ssize_t *) = (ssize_t)ret;
+				GETARG(ssize_t *);
 			else if (flags & PTRDIFFT)
-				*GETARG(ptrdiff_t *) = ret;
+				GETARG(ptrdiff_t *);
 			else if (flags & INTMAXT)
-				*GETARG(intmax_t *) = ret;
+				GETARG(intmax_t *);
 			else if (flags & LONGINT)
-				*GETARG(long *) = ret;
+				GETARG(long *);
 			else if (flags & SHORTINT)
-				*GETARG(short *) = ret;
+				GETARG(short *);
 			else if (flags & CHARINT)
-				*GETARG(signed char *) = ret;
+				GETARG(signed char *);
 			else
-				*GETARG(int *) = ret;
+				GETARG(int *);
+#else
+			if (flags & LLONGINT)
+				GETARG(long long *) = ret;
+			else if (flags & SIZET)
+				GETARG(ssize_t *) = (ssize_t)ret;
+			else if (flags & PTRDIFFT)
+				GETARG(ptrdiff_t *) = ret;
+			else if (flags & INTMAXT)
+				GETARG(intmax_t *) = ret;
+			else if (flags & LONGINT)
+				GETARG(long *) = ret;
+			else if (flags & SHORTINT)
+				GETARG(short *) = ret;
+			else if (flags & CHARINT)
+				GETARG(signed char *) = ret;
+			else
+				GETARG(int *) = ret;
+#endif
 			continue;	/* no output */
 		case 'O':
 			flags |= LONGINT;
