@@ -1,7 +1,10 @@
 /*	$NetBSD: rump_x86_cpu_features.c,v 1.1 2018/10/26 11:27:00 smichaels Exp $	*/
 
 /*
- * Copyright (c) 2018 Spencer Michaels.  All Rights Reserved.
+ * Copyright (c) 2018-2019 NCC Group.  All Rights Reserved.
+ *
+ * Development of this software was supported by the
+ * Finnish Cultural Foundation.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
